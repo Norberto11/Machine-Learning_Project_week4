@@ -1,0 +1,153 @@
+---
+title: <font size="5"> PREDICTION WRITEUP - HUMAN ACTIVITY RECOGNITION </font>
+author: "Norberto Ortigoza"
+date: "June 27, 2018"
+output: html_document
+---
+
+#####1. Executive Summary
+This report deals with the prediction of how well an actvity is being done based on modelling the data collected from accelerometers on the belt, forearm, arm, and dumbell of 6 participants. They were asked to perform barbell lifts correctly and incorrectly in 5 different ways.Two models were generated and defined the one with better accuracy of 0.9943 (Random Forest), which was tested on a data set with correct results.
+
+#####2. Reference
+The data was extracted from the website: http://web.archive.org/web/20161224072740/http:/groupware.les.inf.puc-rio.br/har.
+
+The reference for the report and data collection is:
+Ugulino, W.; Cardador, D.; Vega, K.; Velloso, E.; Milidiu, R.; Fuks, H. Wearable Computing: Accelerometers' Data Classification of Body Postures and Movements. Proceedings of 21st Brazilian Symposium on Artificial Intelligence. Advances in Artificial Intelligence - SBIA 2012. In: Lecture Notes in Computer Science. , pp. 52-61. Curitiba, PR: Springer Berlin / Heidelberg, 2012. ISBN 978-3-642-34458-9. DOI: 10.1007/978-3-642-34459-6_6. 
+
+#####3. Data
+We will store the data on the "training", and "testing" data frames. We will then later perform an exploratory analysis in order to verify if the variables from the data can be reduced so the processing can be optimized.
+
+```{r data,echo=TRUE,message=FALSE}
+setwd("H:/Courses/Data Analysis Specialization/8. Machine Learning/Project")
+library(dplyr)
+training<-read.csv("./pml-training.csv")
+testing<-read.csv("./pml-testing.csv")
+```
+
+#####4. Exploratory Analysis
+Let's print the 5 first columns of the training set.(For purposes of the report the output won't be displayed as it may take long space).
+
+```{r head,echo=TRUE,results=FALSE}
+head(training)
+```
+ We can see there are different columns with important amount of NA or missing values that we will not considered for the data processing as these will add noise to the analysis. In addition, we found some variables related to time that won't add value to the analysis as the outcome will depends on sensor measurements and not the time this has been applied. We consider that having user as variable is also not useful as we want to predict "classe" based on the data from different users, independently of who the measurements are coming from. At the end, the data with direct measurement from accelerometers are the one that should be considered for predictions.
+ 
+#####5. Cleaning Data
+ 
+In order to eliminate the columns with NA or missing values, we will run a code that finds the columns where more than 5% of the data are either NA or missing, obtaining a vector of column indexes (called var_vector) that will allow to eliminate later these variables from the dataset.
+
+```{r noNAs,echo=TRUE,cache=TRUE}
+x=as.integer()
+y=as.integer()
+var_vector=c()
+y=0
+x=0
+for (j in 1:ncol(training)){
+      for(i in 1:nrow(training)){
+            if (is.na(training[i,j])==TRUE||training[i,j]=="") {
+              x=x+1
+            }
+      }  
+      if (x/nrow(training)>0.05){
+      y=y+1
+      var_vector[y]<-j
+      }
+x=0
+}
+length(var_vector)
+```
+The result show 100 indexes from columns with more than 5% NA or missing values that we will not consider. 
+
+We will now obtained a new set of training and validation set without the variables previously identified with high NA or missing values and the variables related to time and users. The dataframe so far will be reduced from 160 to 56 variables.
+
+```{r filterdata,echo=TRUE}
+training_red<-training[,-var_vector]
+training_red<-select(training_red,-contains("time"))
+training_red<-select(training_red,-contains("user"))
+
+testing_red<-testing[,-var_vector]
+testing_red<-select(testing_red,-contains("time"))
+testing_red<-select(testing_red,-contains("user"))
+```
+
+Let's list the remaining variables for the dataset
+ 
+```{r var,echo=TRUE}
+ print(colnames(training_red))
+```
+ 
+ We can see some other variables that do not seem to provide valuable information to the model, like: "X", "new window", "num window". We will eliminate these as well, reducing the number of variables even more to a final 53.
+ 
+```{r filterdata2,echo=TRUE}
+training_red<-select(training_red,-new_window,-X,-num_window)
+testing_red<-select(testing_red,-new_window,-X,-num_window)
+```
+ 
+#####6. Creating and testing models
+We will use the "CV" method (Cross Validation) with 5 folds in order to perform the analysis to obtain the model to predict the testing data. We will evaluate 2 different models (rf and gbm) to check for better accuracy;we will then obtain the predicted values for the testing data. In order to have a faster processing we will do parallel processing for each model and using the trainControl feature from caret package to automatically evaluate the different folds.
+
+#######6.1 Random Forest (rf)
+```{r rf_model,echo=TRUE,cache=TRUE,message=FALSE}
+library(parallel)
+library(doParallel)
+library(caret)
+cluster <- makeCluster(detectCores() - 1) # convention to leave 1 core for OS
+registerDoParallel(cluster)
+
+fitControl <- trainControl(method = "cv",number = 5,allowParallel = TRUE)
+
+set.seed=1002
+modFit_rf<-train(classe~.,method="rf",data=training_red,trControl=fitControl)
+
+stopCluster(cluster)
+registerDoSEQ()
+
+modFit_rf
+modFit_rf$resample
+confusionMatrix.train(modFit_rf)
+
+pred_rf<-predict(modFit_rf,testing_red)
+```
+
+#######6.2  Generalized Boosted Regression Model (gbm)
+```{r gbm_model,echo=TRUE,cache=TRUE,message=FALSE}
+library(parallel)
+library(doParallel)
+cluster <- makeCluster(detectCores() - 1) # convention to leave 1 core for OS
+registerDoParallel(cluster)
+
+fitControl <- trainControl(method = "cv",number = 5,allowParallel = TRUE)
+
+set.seed=1003
+modFit_gbm<-train(classe~.,method="gbm",data=training_red,trControl=fitControl,verbose=FALSE)
+
+stopCluster(cluster)
+registerDoSEQ()
+
+modFit_gbm
+modFit_gbm$resample
+confusionMatrix.train(modFit_gbm)
+
+pred_gbm<-predict(modFit_gbm,testing_red)
+```
+
+From the obtained models we found that Random Forest analysis provided for best accuracy (0.9943). Below the summary of accuracy and predicted results for each model.We can see despite the difference in accuracy, both models provided with the same predictions for the testing set.
+
+```{r results,echo=TRUE}
+print(paste("rf_accuracy=","0.9943"))
+print(paste("gbm_accuracy=","0.9625"))
+print(paste("Predicted Results rf= "))
+pred_rf
+print(paste("Predicted Results gbm="))
+pred_gbm
+```
+
+#####7. Expected Out of Sample Error
+
+Accuracy is the fraction of properly predicted cases thus we will get the sample error as 1- accuracy. For the selected model using random forest the error rate will be then
+
+```{r error,echo=TRUE}
+print(paste("Out of Sample Error=",round((1-0.9943)*100,3),"%"))
+```
+
+It is important to mention that technically this error is the In Sample Error, however it's the error so far expected for data out of the one provided on the training set.

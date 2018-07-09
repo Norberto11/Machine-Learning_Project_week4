@@ -1,6 +1,6 @@
 # PREDICTION WRITEUP - HUMAN ACTIVITY RECOGNITION 
 Norberto Ortigoza
-June 27, 2018
+-June 27, 2018
 
 ## 1. Executive Summary
 This report deals with the prediction of how well an actvity is being done based on modelling the data collected from accelerometers on the belt, forearm, arm, and dumbell of 6 participants. They were asked to perform barbell lifts correctly and incorrectly in 5 different ways.Two models were generated and defined the one with better accuracy of 0.9943 (Random Forest), which was tested on a data set with correct results.
@@ -60,6 +60,7 @@ testing_red<-select(testing_red,-contains("time"))
 testing_red<-select(testing_red,-contains("user"))
 Let’s list the remaining variables for the dataset
 print(colnames(training_red))
+
 ##  [1] "X"                    "new_window"           "num_window"          
 ##  [4] "roll_belt"            "pitch_belt"           "yaw_belt"            
 ##  [7] "total_accel_belt"     "gyros_belt_x"         "gyros_belt_y"        
@@ -215,12 +216,12 @@ confusionMatrix.train(modFit_gbm)
 ##  Accuracy (average) : 0.9626
 pred_gbm<-predict(modFit_gbm,testing_red)
 ```
-From the obtained models we found that Random Forest analysis provided for best accuracy (0.9943). Below the summary of accuracy and predicted results for each model.We can see despite the difference in accuracy, both models provided with the same predictions for the testing set.
+From the obtained models we found that Random Forest analysis provided for best accuracy (0.9945). Below the summary of accuracy and predicted results for each model.We can see despite the difference in accuracy, both models provided with the same predictions for the testing set.
 ```
-print(paste("rf_accuracy=","0.9943"))
-## [1] "rf_accuracy= 0.9943"
-print(paste("gbm_accuracy=","0.9625"))
-## [1] "gbm_accuracy= 0.9625"
+print(paste("rf_accuracy=","0.9945"))
+## [1] "rf_accuracy= 0.9945"
+print(paste("gbm_accuracy=","0.9626"))
+## [1] "gbm_accuracy= 0.9626"
 print(paste("Predicted Results rf= "))
 ## [1] "Predicted Results rf= "
 pred_rf
@@ -235,8 +236,8 @@ pred_gbm
 ## 7. Expected Out of Sample Error
 Accuracy is the fraction of properly predicted cases thus we will get the sample error as 1- accuracy. For the selected model using random forest the error rate will be then
 ```
-print(paste("Out of Sample Error=",round((1-0.9943)*100,3),"%"))
-## [1] "Out of Sample Error= 0.57 %"
+print(paste("Out of Sample Error=",round((1-0.9945)*100,3),"%"))
+## [1] "Out of Sample Error= 0.55 %"
 ```
 It is important to mention that technically this error is the In Sample Error, however it’s the error so far expected for data out of the one provided on the training set.
 

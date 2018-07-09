@@ -82,9 +82,10 @@ print(colnames(training_red))
 ## [55] "magnet_forearm_z"     "classe"
 ```
 We can see some other variables that do not seem to provide valuable information to the model, like: “X”, “new window”, “num window”. We will eliminate these as well, reducing the number of variables even more to a final 53.
+```
 training_red<-select(training_red,-new_window,-X,-num_window)
 testing_red<-select(testing_red,-new_window,-X,-num_window)
-
+```
 ## 6. Creating and testing models
 We will use the “CV” method (Cross Validation) with 5 folds in order to perform the analysis to obtain the model to predict the testing data. We will evaluate 2 different models (rf and gbm) to check for better accuracy;we will then obtain the predicted values for the testing data. In order to have a faster processing we will do parallel processing for each model and using the trainControl feature from caret package to automatically evaluate the different folds.
 
